@@ -1,0 +1,64 @@
+// FILE: compliance/regulatory.proto
+// Regulator interface - required for license
+syntax = "proto3";
+package dg.ts.compliance.v1;
+
+import "kill_switch.proto";
+
+// Real-time regulator feed
+message RegulatorFeed {
+  Tai64nTimestamp timestamp = 1;
+  string feed_id = 2; // Unique per regulator
+  
+  // Live exposure data
+  message LiveExposure {
+    string participant_id = 1;
+    double total_exposure_usd = 2;
+    double approved_limit_usd = 3;
+    double collateral_usd = 4;
+    double coverage_ratio = 5;
+    
+    repeated string large_positions = 6; // Instrument IDs
+    uint32 active_orders = 7;
+    uint32 filled_orders_hour = 8;
+  }
+  
+  repeated LiveExposure participant_exposures = 3;
+  
+  // System health
+  CatastropheDashboard system_health = 4;
+  
+  // Recent alerts (last 24h)
+  message Alert {
+    Tai64nTimestamp alert_time = 1;
+    string alert_type = 2;
+    string severity = 3;
+    string description = 4;
+    bool resolved = 5;
+  }
+  
+  repeated Alert recent_alerts = 5;
+  
+  // Suspicious activity
+  message SuspiciousActivity {
+    Tai64nTimestamp detection_time = 1;
+    string pattern = 2; // SPOOFING, LAYERING, WASH_TRADING
+    repeated string participant_ids = 3;
+    repeated string instrument_ids = 4;
+    bool trading_halted = 5;
+    bool regulator_notified = 6;
+  }
+  
+  repeated SuspiciousActivity suspicious_activities = 6;
+}
+
+// Mandatory regulatory reports
+message SuspiciousActivityReport {
+  string report_id = 1;
+  Tai64nTimestamp filing_time = 2;
+  string jurisdiction = 3; // SEC, FCA, MAS, etc.
+  
+  SuspiciousActivity activity = 4;
+  bytes digital_signature = 5;
+  string filing_officer = 6;
+}

@@ -1,0 +1,107 @@
+// FILE: order.proto
+syntax = "proto3";
+package dg.ts.order.v1;
+
+import "common.proto";
+import "atomic.proto";
+
+// Order - immutable once created
+message Order {
+  // Core immutable fields
+  OrderId id = 1;
+  string client_order_id = 2; // Participant's reference
+  ParticipantId participant_id = 3;
+  
+  Tai64nTimestamp created_at = 4;
+  
+  // Trading details
+  string instrument_id = 5;
+  OrderSide side = 6;
+  OrderType type = 7;
+  
+  DecimalPrice price = 8; // For LIMIT orders
+  DecimalQuantity quantity = 9;
+  
+  // Time in force
+  message TimeInForce {
+    oneof tif {
+      DayOrder day = 1;
+      GoodTilCancelled gtc = 2;
+      ImmediateOrCancel ioc = 3;
+      FillOrKill fok = 4;
+    }
+  }
+  
+  message DayOrder {
+    string session_id = 1; // Trading session
+  }
+  
+  message GoodTilCancelled {
+    Tai64nTimestamp expiry = 1; // Optional expiry
+  }
+  
+  message ImmediateOrCancel {}
+  message FillOrKill {}
+  
+  TimeInForce time_in_force = 10;
+  
+  // State machine - ONLY these transitions
+  OrderStatus status = 11;
+  Tai64nTimestamp status_updated_at = 12;
+  string status_reason = 13; // For REJECTED, CANCELLED
+  
+  // Fills
+  message Fill {
+    TradeId trade_id = 1;
+    DecimalQuantity quantity = 2;
+    DecimalPrice price = 3;
+    Tai64nTimestamp filled_at = 4;
+  }
+  
+  repeated Fill fills = 14;
+  DecimalQuantity remaining_quantity = 15;
+  
+  // Safety and compliance links
+  string collateral_lock_id = 16; // MUST be set before ACCEPTED
+  repeated string circuit_breaker_ids = 17; // Active when order placed
+  repeated string audit_record_ids = 18;
+  
+  // Versioning for amendments
+  uint32 version = 19;
+  OrderId replaces_order_id = 20; // For amendments/cancels
+}
+
+// Order events for order book
+message OrderEvent {
+  Tai64nTimestamp timestamp = 1;
+  
+  oneof event {
+    OrderAdded added = 2;
+    OrderCancelled cancelled = 3;
+    OrderModified modified = 4;
+    OrderFilled filled = 5;
+  }
+  
+  message OrderAdded {
+    Order order = 1;
+    string order_book_snapshot_id = 2;
+  }
+  
+  message OrderCancelled {
+    OrderId order_id = 1;
+    string reason = 2; // USER_REQUEST, SYSTEM_ERROR, RISK_LIMIT
+    DecimalQuantity remaining_quantity = 3;
+  }
+  
+  message OrderModified {
+    OrderId old_order_id = 1;
+    Order new_order = 2;
+    string reason = 3;
+  }
+  
+  message OrderFilled {
+    OrderId order_id = 1;
+    Fill fill = 2;
+    DecimalQuantity new_remaining = 3;
+  }
+}

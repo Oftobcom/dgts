@@ -1,0 +1,57 @@
+// FILE: common.proto
+syntax = "proto3";
+package dg.ts.common.v1;
+
+import "kill_switch.proto";
+
+// Identifiers
+message OrderId {
+  string id = 1;
+  string participant_prefix = 2; // First 4 chars of participant ID
+}
+
+message TradeId {
+  string id = 1;
+  Tai64nTimestamp timestamp = 2;
+}
+
+message ParticipantId {
+  string id = 1;
+  string jurisdiction = 2; // Regulatory jurisdiction
+}
+
+// Enums
+enum OrderSide {
+  SIDE_UNKNOWN = 0;
+  BUY = 1;
+  SELL = 2;
+}
+
+enum OrderType {
+  TYPE_UNKNOWN = 0;
+  LIMIT = 1;
+  MARKET = 2;
+  // IOC, FOK etc. are extensions
+}
+
+enum OrderStatus {
+  STATUS_UNKNOWN = 0;
+  PENDING_COLLATERAL = 1; // Waiting for collateral check
+  NEW = 2; // In order book
+  PARTIALLY_FILLED = 3;
+  FILLED = 4;
+  CANCELLED = 5;
+  REJECTED = 6; // Failed risk check
+  EXPIRED = 7;
+}
+
+// Price and quantity
+message DecimalPrice {
+  int64 unscaled = 1; // e.g., 12345 for 123.45
+  int32 scale = 2; // e.g., 2 for 2 decimal places
+}
+
+message DecimalQuantity {
+  int64 unscaled = 1;
+  int32 scale = 2;
+}

@@ -1,0 +1,56 @@
+// FILE: participant.proto
+syntax = "proto3";
+package dg.ts.participant.v1;
+
+import "common.proto";
+import "atomic.proto";
+
+message Participant {
+  ParticipantId id = 1;
+  string legal_name = 2;
+  string jurisdiction = 3;
+  
+  enum ParticipantStatus {
+    STATUS_UNKNOWN = 0;
+    PENDING_APPROVAL = 1;
+    ACTIVE = 2;
+    SUSPENDED = 3;
+    TERMINATED = 4;
+  }
+  
+  ParticipantStatus status = 4;
+  Tai64nTimestamp status_since = 5;
+  
+  // Risk limits - IMMUTABLE once set
+  message RiskLimits {
+    double max_total_exposure_usd = 1;
+    double max_position_per_instrument_usd = 2;
+    double max_order_size_usd = 3;
+    double min_collateral_ratio = 4; // e.g., 1.5 for 150%
+    
+    // Concentration limits
+    double max_market_share_percent = 5; // e.g., 25.0
+    uint32 max_active_orders = 6;
+    
+    // Rate limits
+    uint32 max_orders_per_second = 7;
+    uint32 max_cancels_per_second = 8;
+  }
+  
+  RiskLimits limits = 6;
+  Tai64nTimestamp limits_set_at = 7;
+  string limits_approver = 8; // Compliance officer who approved
+  
+  // Current state (derived, not stored)
+  message CurrentExposure {
+    double total_exposure_usd = 1;
+    map<string, double> instrument_exposures = 2; // instrument_id -> exposure
+    uint32 active_orders_count = 3;
+    CollateralLock active_collateral = 4;
+  }
+  
+  // Audit trail
+  repeated string audit_record_ids = 9;
+  Tai64nTimestamp created_at = 10;
+  string created_by = 11;
+}

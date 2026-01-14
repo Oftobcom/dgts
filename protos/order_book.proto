@@ -1,0 +1,47 @@
+// FILE: order_book.proto
+syntax = "proto3";
+package dg.ts.order_book.v1;
+
+import "common.proto";
+import "order.proto";
+
+// Order book snapshot - deterministic state
+message OrderBookSnapshot {
+  string snapshot_id = 1;
+  Tai64nTimestamp timestamp = 2;
+  string instrument_id = 3;
+  
+  // Price levels
+  message PriceLevel {
+    DecimalPrice price = 1;
+    DecimalQuantity total_quantity = 2;
+    uint32 order_count = 3;
+    repeated OrderId order_ids = 4; // In time priority
+  }
+  
+  repeated PriceLevel bids = 4; // Sorted high to low
+  repeated PriceLevel asks = 5; // Sorted low to high
+  
+  // Market statistics
+  DecimalPrice last_trade_price = 6;
+  DecimalPrice vwap = 7; // Volume weighted average price
+  DecimalQuantity total_volume = 8;
+  
+  // Safety context
+  repeated string active_circuit_breakers = 9;
+  bool trading_enabled = 10;
+  
+  // For replay
+  bytes deterministic_seed = 11;
+  uint64 sequence_number = 12;
+}
+
+// Order book delta (for real-time updates)
+message OrderBookDelta {
+  string snapshot_id = 1;
+  Tai64nTimestamp timestamp = 2;
+  string instrument_id = 3;
+  
+  repeated OrderEvent events = 4;
+  uint64 sequence_number = 5;
+}

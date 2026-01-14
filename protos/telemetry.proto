@@ -1,0 +1,60 @@
+// FILE: telemetry.proto
+syntax = "proto3";
+package dg.ts.telemetry.v1;
+
+import "common.proto";
+import "kill_switch.proto";
+
+// Critical event logging
+message CriticalEvent {
+  Tai64nTimestamp timestamp = 1;
+  string event_id = 2;
+  uint64 sequence_number = 3;
+  
+  oneof event {
+    // Safety events
+    KillSwitchActivation kill_switch = 4;
+    CircuitBreaker circuit_breaker = 5;
+    
+    // Trading events (ONLY after safety systems)
+    // order.proto OrderEvent
+    // trade.proto Trade
+    
+    // System events
+    SystemIntegrityFailure integrity_failure = 6;
+    RegulatoryReportFiled regulatory_report = 7;
+    ManualOverride manual_override = 8;
+  }
+  
+  // Context
+  string component = 9;
+  string severity = 10; // DEBUG, INFO, WARN, ERROR, FATAL
+  string operator = 11; // Who initiated (system or human)
+  
+  // For replay
+  bytes system_state_hash = 12;
+  repeated string affected_participants = 13;
+}
+
+message SystemIntegrityFailure {
+  string check_name = 1;
+  string expected_value = 2;
+  string actual_value = 3;
+  bool trading_halted = 4;
+}
+
+message RegulatoryReportFiled {
+  string report_type = 1;
+  string jurisdiction = 2;
+  string report_id = 3;
+  Tai64nTimestamp due_by = 4;
+  bool filed_on_time = 5;
+}
+
+message ManualOverride {
+  string override_type = 1;
+  string reason = 2;
+  string approver = 3;
+  repeated string witnesses = 4;
+  string affected_component = 5;
+}

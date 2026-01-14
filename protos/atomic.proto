@@ -1,0 +1,70 @@
+// FILE: settlement/atomic.proto
+// Atomic settlement - trades either fully settle or don't happen
+syntax = "proto3";
+package dg.ts.settlement.v1;
+
+import "kill_switch.proto";
+
+// DvP (Delivery vs Payment) atomic settlement
+message AtomicSettlement {
+  string settlement_id = 1;
+  Tai64nTimestamp creation_time = 2;
+  
+  message SettlementLeg {
+    string participant_id = 1;
+    string instrument_id = 2;
+    double quantity = 3;
+    enum LegType {
+      LEG_UNKNOWN = 0;
+      DELIVERY = 1; // Delivering instrument
+      PAYMENT = 2; // Paying cash
+    }
+    LegType type = 4;
+    double amount_usd = 5; // For PAYMENT legs
+  }
+  
+  repeated SettlementLeg legs = 3;
+  
+  enum SettlementStatus {
+    STATUS_UNKNOWN = 0;
+    PENDING = 1; // Created, not started
+    EXECUTING = 2; // In progress
+    COMPLETED = 3; // All legs settled
+    FAILED = 4; // Rolled back completely
+    IRREVERSIBLE = 5; // Cannot be rolled back
+  }
+  
+  SettlementStatus status = 4;
+  
+  // Atomic guarantee: all or nothing
+  bool all_or_none = 5;
+  Tai64nTimestamp completed_time = 6;
+  string failure_reason = 7;
+  
+  // Links to safety systems
+  repeated string circuit_breaker_ids = 8;
+  repeated string audit_record_ids = 9;
+}
+
+// Collateral verification and locking
+message CollateralLock {
+  string lock_id = 1;
+  Tai64nTimestamp lock_time = 2;
+  string participant_id = 3;
+  
+  double amount_usd = 4;
+  enum LockType {
+    TYPE_UNKNOWN = 0;
+    PRE_TRADE = 1; // Before order acceptance
+    SETTLEMENT = 2; // For active settlement
+    DEFAULT_COVER = 3; // For mutualized default fund
+  }
+  LockType type = 5;
+  
+  string reference_id = 6; // Order ID, Settlement ID, etc.
+  Tai64nTimestamp expires_at = 7;
+  
+  bool released = 8;
+  Tai64nTimestamp released_at = 9;
+  string released_reason = 10;
+}

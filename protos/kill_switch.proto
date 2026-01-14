@@ -1,0 +1,140 @@
+// FILE: safety/kill_switch.proto
+// MUST BE IMPLEMENTED BEFORE ANY TRADING CODE
+syntax = "proto3";
+package dg.ts.safety.v1;
+
+// TAI64N timestamp - NEVER use system clock in financial systems
+message Tai64nTimestamp {
+  int64 seconds = 1;      // TAI seconds since 1970-01-01 00:00:00 TAI
+  uint32 nanoseconds = 2; // Nanoseconds [0, 999999999]
+}
+
+// Physical kill switch activation record
+message KillSwitchActivation {
+  Tai64nTimestamp timestamp = 1;
+  string switch_id = 2;          // Physical device serial number
+  repeated string keyholder_ids = 3; // 2-of-N required
+  
+  enum ActivationReason {
+    REASON_UNKNOWN = 0;
+    MANUAL_EMERGENCY = 1;        // Human decision
+    AUTOMATED_CIRCUIT_BREAKER = 2; // System detected danger
+    REGULATOR_ORDER = 3;         // Legal requirement
+    SYSTEM_INTEGRITY_FAILURE = 4; // Audit trail gap, hash mismatch
+  }
+  
+  ActivationReason reason = 4;
+  string reason_details = 5;
+  
+  // Proof of physical activation
+  message PhysicalProof {
+    bytes tamper_seal_image = 1;     // Photo before activation
+    bytes gps_coordinates = 2;       // Where it was pulled
+    repeated string witness_signatures = 3; // External witnesses
+  }
+  
+  PhysicalProof proof = 6;
+  
+  // Recovery requires manual intervention
+  Tai64nTimestamp minimum_resume_time = 7;
+  repeated string resume_approvers_required = 8;
+}
+
+// Automated circuit breaker thresholds
+message CircuitBreaker {
+  string breaker_id = 1;
+  
+  message Threshold {
+    oneof condition {
+      PriceMove price_move = 2;      // X% in Y seconds
+      VolumeSpike volume_spike = 3;   // Z× average volume
+      LatencyExceeded latency = 4;    // System too slow
+      CapitalDepletion capital = 5;   // Buffer below minimum
+      ParticipantConcentration concentration = 6; // One participant too large
+    }
+  }
+  
+  message PriceMove {
+    double percentage = 1;  // e.g., 5.0 for 5%
+    uint32 seconds = 2;     // Time window
+    repeated string instruments = 3;
+  }
+  
+  message VolumeSpike {
+    double multiplier = 1;  // e.g., 10.0 for 10× average
+    uint32 minutes = 2;     // Rolling window
+    repeated string instruments = 3;
+  }
+  
+  message LatencyExceeded {
+    uint64 microseconds = 1; // e.g., 1000 for 1ms
+    uint32 consecutive_cycles = 2;
+  }
+  
+  message CapitalDepletion {
+    double buffer_percentage = 1; // e.g., 0.8 for 80% depleted
+  }
+  
+  message ParticipantConcentration {
+    double market_share_percentage = 1; // e.g., 30.0 for 30%
+    string participant_id = 2;
+  }
+  
+  Threshold threshold = 7;
+  bool is_active = 8;
+  Tai64nTimestamp last_triggered = 9;
+}
+
+// Catastrophe dashboard state
+message CatastropheDashboard {
+  Tai64nTimestamp timestamp = 1;
+  
+  enum SystemStatus {
+    STATUS_UNKNOWN = 0;
+    STATUS_GREEN = 1;    // Normal operation
+    STATUS_YELLOW = 2;   // Degraded but trading
+    STATUS_RED = 3;      // Trading halted - automatic
+    STATUS_BLACK = 4;    // Kill switch activated - manual
+  }
+  
+  SystemStatus overall_status = 2;
+  
+  // Component statuses
+  message ComponentStatus {
+    string component = 1;
+    SystemStatus status = 2;
+    string details = 3;
+    Tai64nTimestamp last_change = 4;
+  }
+  
+  repeated ComponentStatus components = 3;
+  
+  // Financial exposure
+  message ExposureMetrics {
+    double total_exposure_usd = 1;
+    double capital_buffer_usd = 2;
+    double required_capital_usd = 3;
+    double buffer_percentage = 4; // (buffer/required) × 100
+    
+    message TopExposure {
+      string participant_id = 1;
+      double exposure_usd = 2;
+      double collateral_usd = 3;
+      double coverage_ratio = 4; // collateral/exposure
+    }
+    
+    repeated TopExposure top_5_exposures = 5;
+  }
+  
+  ExposureMetrics exposure = 4;
+  
+  // Mandatory actions
+  message MandatoryAction {
+    Tai64nTimestamp due_by = 1;
+    string action = 2;
+    string component = 3;
+    bool is_overdue = 4;
+  }
+  
+  repeated MandatoryAction upcoming_actions = 5;
+}

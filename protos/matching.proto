@@ -1,0 +1,89 @@
+// FILE: matching.proto
+syntax = "proto3";
+package dg.ts.matching.v1;
+
+import "common.proto";
+import "order.proto";
+import "order_book.proto";
+import "kill_switch.proto";
+
+// Deterministic matching input
+message MatchingInput {
+  string cycle_id = 1;
+  Tai64nTimestamp timestamp = 2;
+  
+  // Current state
+  OrderBookSnapshot order_book = 3;
+  repeated OrderEvent new_events = 4;
+  
+  // Safety context
+  CatastropheDashboard safety_status = 5;
+  repeated CircuitBreaker active_circuit_breakers = 6;
+  
+  // Determinism
+  bytes random_seed = 7;
+  uint64 input_sequence = 8;
+}
+
+// Matching output - trades generated
+message MatchingOutput {
+  string cycle_id = 1;
+  Tai64nTimestamp timestamp = 2;
+  
+  // Generated trades
+  repeated Trade trades = 3;
+  
+  // Updated order book
+  OrderBookSnapshot updated_order_book = 4;
+  repeated OrderEvent output_events = 5;
+  
+  // Price discovery
+  message AuctionResults {
+    DecimalPrice opening_price = 1;
+    DecimalPrice closing_price = 2;
+    DecimalPrice high_price = 3;
+    DecimalPrice low_price = 4;
+    DecimalQuantity total_volume = 5;
+    uint32 trade_count = 6;
+  }
+  
+  AuctionResults auction = 6;
+  
+  // Verification
+  bytes output_hash = 7; // SHA3-512 of all outputs
+  bool shadow_verified = 8; // Verified by shadow matching engine
+  string shadow_match_id = 9;
+}
+
+// For shadow matching verification
+message ShadowMatchVerification {
+  string primary_cycle_id = 1;
+  string shadow_cycle_id = 2;
+  
+  bytes primary_hash = 3;
+  bytes shadow_hash = 4;
+  
+  bool hashes_match = 5;
+  
+  message Divergence {
+    string field = 1;
+    bytes primary_value = 2;
+    bytes shadow_value = 3;
+    string reason = 4;
+  }
+  
+  repeated Divergence divergences = 6;
+  
+  // Resolution
+  enum Resolution {
+    RESOLUTION_UNKNOWN = 0;
+    USE_PRIMARY = 1;
+    USE_SHADOW = 2;
+    MANUAL_ARBITRATION = 3;
+    HALT_TRADING = 4;
+  }
+  
+  Resolution resolution = 7;
+  string resolution_authority = 8; // Who decided
+  Tai64nTimestamp resolved_at = 9;
+}

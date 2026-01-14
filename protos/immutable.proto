@@ -1,0 +1,30 @@
+// FILE: audit/immutable.proto
+// Cryptographic audit trail - every state change recorded here first
+syntax = "proto3";
+package dg.ts.audit.v1;
+
+import "kill_switch.proto";
+
+// Immutable record with cryptographic chaining
+message ImmutableRecord {
+  Tai64nTimestamp timestamp = 1;
+  bytes record_hash = 2; // SHA3-512(this_record excluding this field)
+  bytes previous_hash = 3; // Creates unbreakable chain
+  
+  // What happened
+  oneof event {
+    KillSwitchActivation kill_switch = 4;
+    // Add other events AFTER safety systems built
+  }
+  
+  // Cryptographic proof
+  bytes exchange_signature = 5; // ECDSA P-384
+  repeated string witness_ids = 6; // External auditors
+  
+  // Storage proof
+  repeated string storage_locations = 7; // Geographic zones
+  bytes blockchain_confirmation = 8; // Public ledger TX ID
+  
+  // For recovery
+  uint64 sequence_number = 9; // Monotonically increasing
+}

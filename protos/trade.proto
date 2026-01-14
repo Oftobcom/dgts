@@ -1,0 +1,53 @@
+// FILE: trade.proto
+syntax = "proto3";
+package dg.ts.trade.v1;
+
+import "common.proto";
+import "order.proto";
+import "atomic.proto";
+
+// Executed trade
+message Trade {
+  TradeId id = 1;
+  Tai64nTimestamp executed_at = 2;
+  
+  // The match
+  OrderId buy_order_id = 3;
+  OrderId sell_order_id = 4;
+  string instrument_id = 5;
+  
+  DecimalPrice price = 6;
+  DecimalQuantity quantity = 7;
+  
+  // Settlement status
+  enum TradeStatus {
+    STATUS_UNKNOWN = 0;
+    EXECUTED = 1; // Matched in order book
+    SETTLING = 2; // In settlement process
+    SETTLED = 3; // Final - funds/instruments transferred
+    FAILED = 4; // Settlement failed
+    CANCELLED = 5; // Cancelled before settlement
+  }
+  
+  TradeStatus status = 8;
+  Tai64nTimestamp status_updated = 9;
+  
+  // Atomic settlement
+  string settlement_id = 10; // Links to AtomicSettlement
+  bool dvp_atomic = 11; // Delivery vs Payment atomic
+  
+  // Fees
+  message Fees {
+    double maker_fee_usd = 1;
+    double taker_fee_usd = 2;
+    double exchange_fee_usd = 3;
+    string fee_schedule_id = 4;
+  }
+  
+  Fees fees = 12;
+  
+  // Audit trail
+  repeated string audit_record_ids = 13;
+  repeated string circuit_breaker_ids = 14;
+  string matching_cycle_id = 15;
+}
