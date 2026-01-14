@@ -1,0 +1,320 @@
+I’m sending a long context. Do not reply until I write: READY. Just acknowledge received.
+
+# DG TS — Canonical Domain Laws (v0.1)
+
+> Scope
+> Defines non-negotiable invariants for DG TS production systems.
+> Any violation = production-blocking defect.
+> Experimental/research behavior allowed only outside production.
+
+---
+
+## 0. System Design & Governance Principles
+
+### 0.1 Architectural Principles
+
+* Single Responsibility per Service: Each service owns exactly one domain concern (matching, clearing, risk, pricing, audit).
+* Explicit Contracts: `.proto` files are the only source of truth.
+* Loose Coupling: Services communicate only via versioned APIs/events.
+* High Cohesion: Domain logic never leaks across service boundaries.
+* Determinism by Default: Identical input + seed → identical outputs.
+* Compliance & Audit Integration: Every state-changing operation logs an immutable audit trail with timestamps, user IDs, and input data.
+
+Primary KPI:
+
+* MTTC per service (hours)
+* Defect Containment Ratio
+* Audit Log Coverage (%)
+
+Primary Economic KPI:
+
+* Cost of Change Index (USD, including compliance overhead)
+
+### 0.2 Operational Principles
+
+* All operations idempotent.
+* State transitions explicit, auditable, and timestamped.
+* All services containerized and stateless (except storage).
+* Failures expected; undefined behavior forbidden.
+* Kill Switches: Global and service-specific kill switches must safely pause order intake and trade execution without data loss.
+
+Primary KPI:
+
+* Successful Retry Rate
+* Recovery Time Objective (RTO)
+* Kill Switch Activation Test Coverage
+
+Primary Economic KPI:
+
+* Operational Cost per 1M Orders (USD)
+
+---
+
+## 1. Order Domain Laws
+
+### 1.1 Purpose
+
+`Order` = binding market instruction submitted by a participant.
+
+Primary KPI:
+
+* Order Acceptance Rate
+
+Primary Economic KPI:
+
+* Lost GMV due to Rejected Orders (USD)
+
+### 1.2 Invariants
+
+1. Orders must be valid: price, quantity, instrument, participant.
+2. Participants may not exceed margin or position limits.
+3. Orders outside serviceable instruments or sessions fail fast with explicit error codes.
+4. Cancellations allowed only if order is active in the order book.
+5. Each order is immutable once accepted, except for explicit cancellation.
+6. Audit Trail Required: every order submission, modification, and cancellation logged with participant ID, timestamp, input, and resulting state.
+7. Kill Switch Compliance: no order accepted if kill switch active.
+
+Primary KPI:
+
+* Invalid Order Rejection Latency (ms)
+* Duplicate Order Suppression Rate
+* Audit Coverage Rate
+
+Primary Economic KPI:
+
+* Potential GMV Loss due to Invalid Orders (USD/day)
+
+### 1.3 Idempotency
+
+* Idempotency key: `order:{participant_id}:{client_order_id}`
+* Repeated submissions:
+
+  * return existing order or
+  * deterministically cancel + replace.
+
+Primary KPI:
+
+* Duplicate Submission Collapse Rate
+
+Primary Economic KPI:
+
+* Cost of Redundant Processing (USD/month)
+
+---
+
+## 2. Trade Domain Laws
+
+### 2.1 Purpose
+
+`Trade` = binding economic contract resulting from matched orders.
+
+Primary KPI:
+
+* Trades per Active Order per Minute
+* Gross Volume Matched per Minute
+
+Primary Economic KPI:
+
+* Contribution Margin per Trade (USD)
+
+### 2.2 Creation Rules
+
+1. Trade must reference valid orders.
+2. Trade creation idempotent by matched order IDs.
+3. Immutable fields: buy/sell order IDs, price, quantity, timestamp, instrument.
+4. Audit Trail Required: Every trade must log pre-match orders, match decision, participants, and timestamps.
+5. Compliance Check: All trades must verify margin, regulatory, and instrument rules before execution.
+
+Primary KPI:
+
+* Trade Creation Success Rate
+* Time from Match → Trade Recorded (ms)
+
+Primary Economic KPI:
+
+* Settlement Cost per Trade (USD)
+
+### 2.3 Lifecycle & FSM
+
+Allowed states:
+
+```
+PENDING → EXECUTED → SETTLED
+PENDING → CANCELLED
+EXECUTED → CANCELLED_BY_SYSTEM
+```
+
+* Any other transition: rejected, logged, audit entry created.
+* Kill Switch Compliance: If global/system kill switch active, no transitions beyond `PENDING`.
+
+Primary KPI:
+
+* FSM Compliance Rate
+* Audit Log Latency
+
+Primary Economic KPI:
+
+* Value Leakage from Invalid State Transitions (USD)
+
+### 2.4 Failure Handling
+
+* Order mismatch, system crash, or latency violation → rollback or safe retry, notify participants.
+* All timestamps immutable and UTC.
+* Kill Switches stop trade execution immediately and safely.
+
+Primary KPI:
+
+* Failed Trade Recovery Rate
+
+Primary Economic KPI:
+
+* Financial Exposure from Unsettled Trades (USD/event)
+
+---
+
+## 3. Matching Engine Laws
+
+* Computes canonical continuous double auction matches.
+* Produces candidate trades; never mutates state outside controlled trade execution.
+* Must be deterministic, auditable, and compliant with participant risk limits and regulatory rules.
+* Kill Switches: Engine must stop accepting orders and emitting matches immediately when activated.
+
+Primary KPI:
+
+* Match Latency (p95)
+* CPU ms per Match
+* Kill Switch Response Time
+
+Primary Economic KPI:
+
+* Order Fulfillment Rate (%)
+* Lost GMV if kill switch triggered (USD)
+
+---
+
+## 4. API Gateway / Orchestration Laws
+
+* Orchestrates calls, enforces idempotency, logs decisions.
+* Sampling for throttling/testing deterministic.
+* Failed trades queued deterministically.
+* Audit Trails: Every API call logged with input, output, participant ID, and timestamp.
+* Kill Switch: Gateway must prevent new order intake and route-safe pending requests.
+
+Primary KPI:
+
+* End-to-End Request Success Rate
+* Gateway Latency Overhead
+
+Primary Economic KPI:
+
+* Revenue Loss per Orchestration Failure (USD/hour)
+
+---
+
+## 5. Participant (Trader) Laws
+
+1. Only participants with sufficient balance/margin may submit orders.
+2. Active positions within risk limits.
+3. Connectivity loss → pending orders handled deterministically.
+4. Audit: All participant state changes logged.
+5. Kill Switch: No participant may submit or cancel orders if global/system switch active.
+
+Primary KPI:
+
+* Participant Utilization Rate
+* Idle Orders Ratio
+
+Primary Economic KPI:
+
+* Revenue at Risk per Participant Downtime (USD/hour)
+
+---
+
+## 6. Eventing & Telemetry Laws
+
+* Events append-only, fail-safe, idempotent.
+* Telemetry for order submission, matching, trades, failures, retries, rollbacks.
+* Audit Trail Mandatory: Every event must include participant, order IDs, timestamps, and system version.
+* Incidents reproducible via event replay.
+* Kill switch triggers logged in telemetry and audit.
+
+Primary KPI:
+
+* Event Delivery Reliability
+* Incident Diagnosis Time
+
+Primary Economic KPI:
+
+* Cost of Investigation + Lost GMV per Incident (USD)
+
+---
+
+## 7. Probabilistic & ML Laws
+
+* ML-driven order routing, liquidity prediction, or pricing deterministic and replayable.
+* Cold-start statistics tracked.
+* Retraining triggered only by metric degradation.
+* ML decisions auditable with full input/output logged for compliance.
+
+Primary KPI:
+
+* Model Lift vs Baseline
+* Prediction Accuracy
+
+Primary Economic KPI:
+
+* Incremental Contribution Margin per Day (USD)
+
+---
+
+## 8. High Availability & Risk Management Laws
+
+1. No single point of failure; replicated services + storage.
+2. Leader election + failover for matching, clearing, pricing engines.
+3. Kill switches stop affected services safely; system must degrade gracefully.
+4. Latency budgets enforced; slowdowns observable before outages.
+
+Primary KPI:
+
+* Service Uptime (SLA %)
+* Failed Match Rate under Load
+
+Primary Economic KPI:
+
+* Revenue At Risk (USD/hour)
+
+---
+
+## 9. Pricing / Fee Laws
+
+1. Fees deterministic, cover operational cost.
+2. Fees logged, auditable, immutable post-trade.
+3. Rule-based fallback if calculation fails.
+4. Audit logs required for every fee computation and fallback activation.
+
+Primary KPI:
+
+* Fee Calculation Latency
+* Fallback Activation Rate
+
+Primary Economic KPI:
+
+* Lost GMV due to Suboptimal Pricing (USD)
+
+---
+
+## 10. Deployment & Governance
+
+1. Generated code never edited manually.
+2. Invariants enforced via unit, integration, replay, and compliance tests.
+3. Failed tests = deployment blocked.
+4. Breaking API changes require migration plan and audit approval.
+5. Audit & Kill Switch Validation: Every deployment must validate audit logging and kill switch operation in staging.
+
+Primary KPI:
+
+* Failed Deployment Prevention Rate
+
+Primary Economic KPI:
+
+* Deployment Risk Cost (USD)

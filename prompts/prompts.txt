@@ -1,0 +1,11 @@
+I’m sending a long context. Do not reply until I write: READY. Just acknowledge received.
+
+DG TS models the canonical electronic exchange core underlying modern venues such as NASDAQ, MICEX, CME, Euronext, and leading Alternative Trading System platforms.
+
+DG TS implements a canonical continuous double auction market, equivalent at the core level to MICEX and NASDAQ, differing only in configuration and extensions
+
+DG TS models the market physics common to MICEX and NASDAQ. Everything else is configuration or extension.
+
+DG TS is not a clone of MICEX or NASDAQ. It is a canonical abstraction of the exchange core they both implement, modeled as a multi-agent differential game in which the evolution of the order book constitutes the system dynamics, agents act as strategic controllers, and market prices arise endogenously from equilibrium-seeking interactions under explicit information and time constraints.
+---
+Create PRODUCTION-ORIENTED set of canonical laws for DG TS project as we actually building resilient systems

@@ -1,0 +1,23 @@
+I’m sending a long context. Do not reply until I write: READY. Just acknowledge received.
+
+# DG TS MVP — Required Proto Files
+
+1. Core Trading
+* order.proto — defines the canonical order (limit/market, IDs, timestamp, state).
+* order_book.proto — tracks order book snapshots and events (add, cancel, match).
+* matching.proto — deterministic matching engine output for trades; seed-based replayable decisions.
+* trade.proto — executed trade object with immutable IDs, timestamp, quantity, price.
+
+2. Participant / Counterparty
+* participant.proto — trader profile, basic risk limits, status (active/inactive).
+* account.proto — balances, basic margin info for MVP.
+
+3. Admin / Governance
+* admin.proto — emergency kill switch, basic feature flags, system control operations.
+
+4. Telemetry / Audit
+* telemetry.proto — critical event logging: order creation/cancellation, trade execution, system errors.
+* audit.proto — minimal audit trail for compliance and replayability (MVP can combine telemetry + audit if needed).
+
+5. Common / Shared
+* common.proto — enums, IDs, timestamps, state constants, shared types across services.

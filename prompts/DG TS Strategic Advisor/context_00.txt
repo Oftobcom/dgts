@@ -1,0 +1,57 @@
+I’m sending a long context. Do not reply until I write: READY. Just acknowledge received.
+
+# DG TS — Continuous Double Auction Matching Engine
+
+Project Overview
+DG TS is an open-source platform modeling the canonical electronic exchange core underlying modern venues such as NASDAQ, MICEX, CME, and leading Alternative Trading Systems. It implements a continuous double auction at its core, providing a canonical abstraction of market physics, where agents act as strategic controllers, and market prices emerge endogenously from equilibrium-seeking interactions under explicit constraints.
+
+DG TS is not a clone of any specific exchange. Instead, it is a production-grade, configurable foundation for building high-performance trading systems and marketplaces.
+
+---
+
+## Minimum Viable Product (MVP)
+
+### Launch
+
+Start the full system with:
+
+```bash
+docker compose up
+```
+
+### Version 0.1 — Core Features
+
+* Participant registration: onboarding traders with identity verification.
+* Order submission: limit and market orders, fully validated against risk and margin rules.
+* Order book visualization: live display of active orders and market depth.
+* Matching algorithm: deterministic, canonical continuous double auction engine.
+* Trade lifecycle management: explicit FSM states (PENDING → EXECUTED → SETTLED / CANCELLED).
+* Admin panel: basic control, monitoring, and emergency kill switch.
+* REST + WebSocket APIs: real-time order updates, market data streaming.
+* Telemetry and dashboards: Golden path monitoring, Prometheus + Grafana, and open API endpoints for system status.
+* ML data collection: structured logging for drift detection, prediction, and liquidity modeling.
+* Risk management: enforce invariants (e.g., one active order per participant per instrument, margin limits, and systemic exposure).
+
+---
+
+## Architecture & Technology Stack
+
+* High-performance components (matching, routing): C++ with gRPC
+* API Gateway: Python FastAPI, enforcing idempotency, audit logs, and compliance checks
+* Admin Panel: React.js, integrated with MapLibre for visualization
+* Geographical & spatial data: PostGIS, OpenStreetMap (OSM) vector tiles, TileServer GL
+* Routing engine: Valhalla for real-world geospatial routing (if modeling logistics)
+* Real-time updates: WebSocket for live order book, trade, and participant state streaming
+* API Contracts: protobuf-first design; `.proto` files are the single source of truth
+* Trip / Order FSM: explicit state machine per domain object
+* Analytics & ML: ClickHouse used solely for telemetry, analytics, and ML pipelines
+* Monitoring: local Prometheus + Grafana dashboards for latency, throughput, trade execution, and system health metrics
+
+---
+
+### Notes on Design Philosophy
+
+* Deterministic, replayable algorithms ensure auditability and compliance.
+* Kill switches and risk controls are embedded throughout the stack to safely pause or throttle trading activity.
+* Every state transition and decision is logged for traceability and post-event analysis.
+* The system is modular, containerized, and designed for high availability and resilience.
