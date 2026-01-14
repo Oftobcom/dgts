@@ -42,9 +42,3 @@ The MVP includes:
 ### License
 
 MIT License — open to contributions, audits, and experimentation
-
----
-
-If you want, I can also **write a “short, catchy GitHub summary”** (1–2 paragraphs) suitable for the main page, README, and social sharing — something that immediately communicates **why DG TS exists and why people should care**.
-
-Do you want me to do that next?
