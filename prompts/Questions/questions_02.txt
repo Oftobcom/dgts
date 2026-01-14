@@ -1,0 +1,114 @@
+30 questions for DG TS so that they guide you from grasping basic exchange concepts to implementing a deterministic, auditable, production-grade MVP.
+I’ll include hints for each to help you think but not give the full answer.
+
+---
+
+# DG TS — 30 Questions With Hints
+
+---
+
+## Very Beginner Level (10 questions)
+
+(Focus: core concepts, order book basics, proto understanding)
+
+1. What is a continuous double auction, and why is it used in modern exchanges?
+   Hint: Think about buyers and sellers submitting orders continuously and how prices adjust dynamically.
+
+2. What is the minimal information needed to define an order?
+   Hint: Consider fields like order type, quantity, price, timestamp, and participant ID.
+
+3. Why do we need unique IDs for orders and trades?
+   Hint: Think about replayability, audit, and avoiding conflicts.
+
+4. What is an order book, and how does it track market depth?
+   Hint: Consider bids, asks, and how prices accumulate at each level.
+
+5. What is a proto file and why is it important for a microservices architecture?
+   Hint: Think about a single source of truth for service communication.
+
+6. Why should all state transitions in an order be explicit?
+   Hint: Think about FSM enforcement, determinism, and audit trails.
+
+7. What does deterministic matching mean?
+   Hint: Same inputs + same seed = same matching outcome every time.
+
+8. What is a trade, and how does it relate to orders?
+   Hint: A trade is the result of matching two orders with compatible prices and quantities.
+
+9. Why do we log every critical event (order creation, match, cancellation)?
+   Hint: Consider compliance, debugging, and replaying market history.
+
+10. What is a kill switch in the context of an exchange?
+    Hint: A way to pause or halt trading safely in emergencies.
+
+---
+
+## Beginner Level (10 questions)
+
+(Focus: proto design, FSMs, telemetry, and MVP coding flow)
+
+11. How should the order proto be structured for maximum clarity and auditability?
+    Hint: Include IDs, timestamps, state, order type, quantity, and price.
+
+12. How does the matching proto interact with the order book proto?
+    Hint: Think of matching engine as a function: order book snapshot → candidate matches → trades.
+
+13. What are the key FSM states for an order?
+    Hint: Example: NEW → PARTIALLY_FILLED → FILLED → CANCELLED.
+
+14. What is idempotency, and why is it critical in order submission?
+    Hint: Submitting the same order multiple times should not create duplicates or inconsistencies.
+
+15. How can you replay an order stream to reconstruct the order book?
+    Hint: Apply all events in sequence using deterministic rules.
+
+16. Why do we need a separate telemetry proto rather than including events in order proto?
+    Hint: Separation allows independent monitoring and analytics.
+
+17. How can admin.proto enforce a global emergency halt?
+    Hint: Think about broadcasting a “STOP_ALL_TRADING” event to all services.
+
+18. What minimal RPCs are required to support order creation, cancellation, and trade execution?
+    Hint: Think about gRPC methods: `CreateOrder`, `CancelOrder`, `GetOrderBook`, `ExecuteTrade`.
+
+19. How can replayable seeds be stored and propagated through the system?
+    Hint: Each matching request should carry a seed stored alongside the event.
+
+20. What basic metrics would you track in MVP telemetry?
+    Hint: Orders per second, trades per second, failed orders, latency p95.
+
+---
+
+## Intermediate Level (10 questions)
+
+(Focus: deterministic engineering, scaling, risk, and coding strategies)
+
+21. How do you ensure deterministic matching when multiple orders arrive at the exact same timestamp?
+    Hint: Decide tie-breaking rules (price-time priority, lexicographic ID).
+
+22. How would you structure your proto messages to support both streaming updates and snapshots efficiently?
+    Hint: Think about incremental events + periodic full snapshots.
+
+23. How can you design a proto-based FSM enforcement mechanism that prevents invalid order state transitions?
+    Hint: Include allowed transitions in proto enums or use service-level validation logic.
+
+24. How would you implement a “kill switch” without causing inconsistent state across services?
+    Hint: Use a single authoritative flag stored in a fast-access service and broadcast event.
+
+25. How can telemetry data be used to detect and respond to abnormal order/matching behavior in real-time?
+    Hint: Consider anomaly detection or thresholds on latency, failed matches, or order density spikes.
+
+26. How do you calculate contribution margin per trade in your proto events for ML feedback?
+    Hint: Include all costs (fees, slippage, operational cost) in the trade proto.
+
+27. What is the minimal test dataset required to verify your matching engine is deterministic and correct?
+    Hint: Include conflicting orders, edge prices, partial fills, and cancellations.
+
+28. How would you extend the MVP proto design to support probabilistic ML models for trade prediction?
+    Hint: Add optional fields for predicted fill probability, suggested price, or candidate scoring.
+
+29. How would you implement a safe rollback mechanism if a critical proto schema change breaks replayability?
+    Hint: Versioned proto files + migration scripts + event replay sandbox.
+
+30. How do you design your gRPC services and proto dependencies to support parallelized high-throughput matching without breaking determinism?
+    Hint: Partition order books, assign deterministic seeds per partition, reconcile results carefully.
