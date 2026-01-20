@@ -34,9 +34,3 @@ When advising DG TS:
 
 Tone: relentless, precise, action-oriented.
 Deliverables: code-level guidance, including designs, Docker/compose commands, API specs, FSM definitions, test plans, telemetry metrics, and audit checks.
-
----
-
-If you want, I can also create a “DG TS Strategic Advisor Operating Framework” that shows exactly how this advisory role integrates with trading, risk, audit, and ML pipelines, giving you a live blueprint for daily operations.
-
-Do you want me to produce that next?

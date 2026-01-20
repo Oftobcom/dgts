@@ -1,0 +1,107 @@
+Below is the progressive question set for DG TS (Trading System Core), with more descriptive hints that actively guide developer thinking without giving away full solutions.
+
+These questions are designed to force correct mental models before code is written — the exact discipline needed to build a deterministic, auditable trading system MVP.
+
+
+🟢 VERY BEGINNER LEVEL
+(Domain primitives & correct mental models)
+> Goal: Understand *what exists* in a trading system and *why*, independently of technology.
+
+1. What problem does a trading system core solve, independent of UI, brokers, or regulations?
+Hint: Reduce the system to agents expressing intentions to exchange assets under strict rules, producing an objective, replayable outcome.
+
+2. What information must be present in *any* order, regardless of asset class?
+Hint: Identify the minimal tuple that allows two opposing intentions to be compared and potentially matched.
+
+3. Why is an order not the same thing as a trade?
+Hint: One represents a conditional future possibility; the other represents an irreversible historical fact.
+
+4. What does “price discovery” mean from a system-design perspective?
+Hint: Think of it as an emergent property of repeated matching under deterministic rules, not as an external process.
+
+5. Why must time be explicitly modeled and never implied?
+Hint: Consider fairness, ordering of events, and how conflicts are resolved when multiple orders compete.
+
+6. What is the conceptual difference between a market order and a limit order?
+Hint: Focus on which variable the trader controls and which variable the system controls.
+
+7. Why does a trading system require strict determinism?
+Hint: Imagine rebuilding system state from logs after a crash or resolving a legal dispute months later.
+
+8. What does “liquidity” mean in software terms?
+Hint: Translate the economic concept into properties of data structures and order availability.
+
+9. What is the smallest possible trading system that can still be called an exchange?
+Hint: Two participants, one matching rule, one state transition, and a recorded outcome.
+
+10. Why is the exchange core intentionally unaware of users, money, and UI?
+Hint: Separate pure matching logic from identity, balance management, and presentation concerns.
+
+
+🟡 BEGINNER LEVEL
+(System decomposition & microservice responsibilities)
+> Goal: Convert domain understanding into clear service boundaries and interactions.
+
+11. What are the natural bounded contexts in DG TS?
+Hint: Look for areas where rules change independently: order intake, matching, risk, persistence, market data.
+
+12. Why should order validation happen *before* matching?
+Hint: Consider both system safety and performance under adversarial conditions.
+
+13. What responsibilities must the Matching Engine *never* have?
+Hint: If a failure in that responsibility could stop trading, it does not belong there.
+
+14. Which interactions must be synchronous, and which can be event-driven?
+Hint: Identify operations where delayed responses could break correctness versus those where eventual consistency is acceptable.
+
+15. What events should be emitted by the core system?
+Hint: Think in terms of state transitions that external systems may need to observe or replay.
+
+16. How should an order’s lifecycle be modeled?
+Hint: A finite state machine with irreversible transitions, not ad-hoc flags.
+
+17. Why is risk management a separate service rather than a matching rule?
+Hint: One prevents invalid states; the other resolves competition between valid states.
+
+18. What data must be persisted immediately, and what can be reconstructed?
+Hint: Assume the process crashes at the worst possible moment.
+
+19. Why is an append-only event log preferable to mutable state updates?
+Hint: Consider auditability, replay, and post-mortem analysis.
+
+20. How should market data be derived from core events?
+Hint: Treat it as a projection, not as primary truth.
+
+🟠 INTERMEDIATE LEVEL
+(Algorithms, consistency, and production-grade thinking)
+> Goal: Enable developers to implement the MVP correctly and safely.
+
+21. How does price–time priority influence order book data structures?
+Hint: You need ordering by price *and* stable ordering within the same price level.
+
+22. How can the matching engine remain correct under high concurrency?
+Hint: Focus on single-writer principles, sequencing, or sharding by instrument.
+
+23. What invariants must always hold during matching?
+Hint: Conservation of volume, monotonic order state progression, and no creation of phantom liquidity.
+
+24. How do you ensure deterministic behavior across restarts and replicas?
+Hint: The same ordered inputs must always produce the same outputs.
+
+25. How should partial fills be represented in the system?
+Hint: One order may generate multiple trades and multiple state transitions.
+
+26. How do you prevent duplicate execution in the presence of retries?
+Hint: Idempotent commands and explicit execution identifiers.
+
+27. How would you design a simulation mode for DG TS?
+Hint: Replace real time with logical time and drive the system from a fixed event sequence.
+
+28. What metrics reveal matching engine health?
+Hint: Look beyond CPU and memory—observe queues, latency distributions, and rejection reasons.
+
+29. Where do game-theoretic or differential game concepts naturally appear?
+Hint: Multiple agents optimize strategies under shared constraints and delayed information.
+
+30. What objectively defines “MVP-ready” for the DG TS Trading System Core?
+Hint: Determinism, correctness under load, and recoverability matter more than features.
